@@ -42,6 +42,9 @@ class HeapToolkitUI {
       this.updateAllocationDetails(id);
       this.highlightAllocationInList(id);
     };
+    
+    // Flag to track initialization state
+    this.initialized = false;
   }
   
   /**
@@ -57,8 +60,13 @@ class HeapToolkitUI {
     // Initialize tabs
     this.switchTab('visualize');
     
-    // Initial UI update
-    this.updateUI();
+    // Mark as initialized
+    this.initialized = true;
+    
+    // Initial UI update (with a small delay to ensure DOM is ready)
+    setTimeout(() => {
+      this.updateUI();
+    }, 50);
   }
   
   /**
@@ -437,69 +445,99 @@ class HeapToolkitUI {
    */
   setupEventListeners() {
     // Tab switching
-    this.elements.tabs.forEach(tab => {
-      tab.addEventListener('click', () => {
-        this.switchTab(tab.dataset.tab);
+    if (this.elements.tabs) {
+      this.elements.tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          this.switchTab(tab.dataset.tab);
+        });
       });
-    });
+    }
     
     // Timeline controls
-    this.elements.timelineControls.play.addEventListener('click', () => {
-      // Play timeline animation
-      console.log('Play timeline');
-    });
+    if (this.elements.timelineControls && this.elements.timelineControls.play) {
+      this.elements.timelineControls.play.addEventListener('click', () => {
+        // Play timeline animation
+        console.log('Play timeline');
+      });
+    }
     
-    this.elements.timelineControls.pause.addEventListener('click', () => {
-      // Pause timeline animation
-      console.log('Pause timeline');
-    });
+    if (this.elements.timelineControls && this.elements.timelineControls.pause) {
+      this.elements.timelineControls.pause.addEventListener('click', () => {
+        // Pause timeline animation
+        console.log('Pause timeline');
+      });
+    }
     
-    this.elements.timelineControls.slider.addEventListener('input', (e) => {
-      // Update timeline position
-      const value = parseInt(e.target.value);
-      console.log('Timeline position:', value);
-    });
+    if (this.elements.timelineControls && this.elements.timelineControls.slider) {
+      this.elements.timelineControls.slider.addEventListener('input', (e) => {
+        // Update timeline position
+        const value = parseInt(e.target.value);
+        console.log('Timeline position:', value);
+      });
+    }
     
     // Bug simulation buttons
-    $('#add-overflow-bug').addEventListener('click', () => {
-      this.showAddBugDialog('overflow');
-    });
+    const addOverflowBtn = $('#add-overflow-bug');
+    if (addOverflowBtn) {
+      addOverflowBtn.addEventListener('click', () => {
+        this.showAddBugDialog('overflow');
+      });
+    }
     
-    $('#add-uaf-bug').addEventListener('click', () => {
-      this.showAddBugDialog('uaf');
-    });
+    const addUafBtn = $('#add-uaf-bug');
+    if (addUafBtn) {
+      addUafBtn.addEventListener('click', () => {
+        this.showAddBugDialog('uaf');
+      });
+    }
     
-    $('#add-typeconf-bug').addEventListener('click', () => {
-      this.showAddBugDialog('typeconf');
-    });
+    const addTypeconfBtn = $('#add-typeconf-bug');
+    if (addTypeconfBtn) {
+      addTypeconfBtn.addEventListener('click', () => {
+        this.showAddBugDialog('typeconf');
+      });
+    }
     
     // Strategy generation
-    $('#generate-strategy').addEventListener('click', () => {
-      const bugId = $('#strategy-bug-selector').value;
-      if (bugId) {
-        this.generateStrategy(parseInt(bugId));
-      } else {
-        alert('Please select a bug first');
-      }
-    });
+    const generateStrategyBtn = $('#generate-strategy');
+    if (generateStrategyBtn) {
+      generateStrategyBtn.addEventListener('click', () => {
+        const bugSelector = $('#strategy-bug-selector');
+        if (bugSelector && bugSelector.value) {
+          this.generateStrategy(parseInt(bugSelector.value));
+        } else {
+          alert('Please select a bug first');
+        }
+      });
+    }
     
     // Code generation
-    $('#generate-code').addEventListener('click', () => {
-      const template = $('#code-template-selector').value;
-      this.generateCode(template);
-    });
+    const generateCodeBtn = $('#generate-code');
+    if (generateCodeBtn) {
+      generateCodeBtn.addEventListener('click', () => {
+        const template = $('#code-template-selector');
+        if (template) {
+          this.generateCode(template.value);
+        }
+      });
+    }
     
-    $('#copy-code').addEventListener('click', () => {
-      const code = $('#code-output').textContent;
-      navigator.clipboard.writeText(code)
-        .then(() => {
-          alert('Code copied to clipboard');
-        })
-        .catch(err => {
-          console.error('Error copying code:', err);
-          alert('Failed to copy code');
-        });
-    });
+    const copyCodeBtn = $('#copy-code');
+    if (copyCodeBtn) {
+      copyCodeBtn.addEventListener('click', () => {
+        const code = $('#code-output');
+        if (code) {
+          navigator.clipboard.writeText(code.textContent)
+            .then(() => {
+              alert('Code copied to clipboard');
+            })
+            .catch(err => {
+              console.error('Error copying code:', err);
+              alert('Failed to copy code');
+            });
+        }
+      });
+    }
   }
   
   /**
@@ -511,14 +549,18 @@ class HeapToolkitUI {
     this.activeTab = tabId;
     
     // Update tab buttons
-    this.elements.tabs.forEach(tab => {
-      tab.classList.toggle('active', tab.dataset.tab === tabId);
-    });
+    if (this.elements.tabs) {
+      this.elements.tabs.forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.tab === tabId);
+      });
+    }
     
     // Update content panels
-    this.elements.contentPanels.forEach(panel => {
-      panel.classList.toggle('active', panel.id === `${tabId}-panel`);
-    });
+    if (this.elements.contentPanels) {
+      this.elements.contentPanels.forEach(panel => {
+        panel.classList.toggle('active', panel.id === `${tabId}-panel`);
+      });
+    }
     
     // Refresh content for the active tab
     this.updateTabContent(tabId);
@@ -532,7 +574,9 @@ class HeapToolkitUI {
     switch (tabId) {
       case 'visualize':
         // Refresh visualizations
-        this.visualizer.render();
+        if (this.visualizer) {
+          this.visualizer.render();
+        }
         break;
         
       case 'analyze':
@@ -563,6 +607,11 @@ class HeapToolkitUI {
    * Update the entire UI
    */
   updateUI() {
+    if (!this.initialized) {
+      console.warn('UI not fully initialized yet. Skipping update.');
+      return;
+    }
+    
     // Update lists
     this.updateAllocationsList();
     this.updateBucketsList();
@@ -572,7 +621,9 @@ class HeapToolkitUI {
     this.updateStrategyBugSelector();
     
     // Refresh visualizations
-    this.visualizer.render();
+    if (this.visualizer) {
+      this.visualizer.render();
+    }
   }
   
   /**
@@ -580,6 +631,11 @@ class HeapToolkitUI {
    */
   updateAllocationsList() {
     const list = this.elements.allocationsList;
+    if (!list) {
+      console.warn('Allocations list element not found');
+      return;
+    }
+    
     list.innerHTML = '';
     
     const allocations = Array.from(this.analyzer.allocations.values());
@@ -604,7 +660,9 @@ class HeapToolkitUI {
       
       item.addEventListener('click', () => {
         this.selectedAllocationId = allocation.id;
-        this.visualizer.selectAllocation(allocation.id);
+        if (this.visualizer) {
+          this.visualizer.selectAllocation(allocation.id);
+        }
         this.updateAllocationDetails(allocation.id);
         this.highlightAllocationInList(allocation.id);
       });
@@ -618,6 +676,11 @@ class HeapToolkitUI {
    */
   updateBucketsList() {
     const list = this.elements.bucketsList;
+    if (!list) {
+      console.warn('Buckets list element not found');
+      return;
+    }
+    
     list.innerHTML = '';
     
     const buckets = this.analyzer.getActiveBuckets();
@@ -650,6 +713,11 @@ class HeapToolkitUI {
    */
   updateTypesList() {
     const list = this.elements.typesList;
+    if (!list) {
+      console.warn('Types list element not found');
+      return;
+    }
+    
     list.innerHTML = '';
     
     const typeStats = this.analyzer.generateTypeStats();
@@ -684,6 +752,11 @@ class HeapToolkitUI {
    */
   updateBugsList() {
     const list = this.elements.bugsList;
+    if (!list) {
+      console.warn('Bugs list element not found');
+      return;
+    }
+    
     list.innerHTML = '';
     
     const bugs = this.bugSimulator.getActiveBugs();
@@ -726,6 +799,10 @@ class HeapToolkitUI {
    */
   updateStrategyBugSelector() {
     const selector = $('#strategy-bug-selector');
+    if (!selector) {
+      console.warn('Strategy bug selector not found');
+      return;
+    }
     
     // Save current selection
     const currentValue = selector.value;
@@ -755,6 +832,10 @@ class HeapToolkitUI {
    */
   updateAllocationDetails(id) {
     const detailsElement = $('#allocation-details');
+    if (!detailsElement) {
+      console.warn('Allocation details element not found');
+      return;
+    }
     
     if (!id || !this.analyzer.allocations.has(id)) {
       detailsElement.innerHTML = '<p>Select an allocation to view details</p>';
@@ -824,21 +905,27 @@ class HeapToolkitUI {
     `;
     
     // Add event listeners for the buttons
-    $('#simulate-overflow-btn').addEventListener('click', () => {
-      this.showSimulateOverflowDialog(id);
-    });
+    const simulateOverflowBtn = $('#simulate-overflow-btn');
+    if (simulateOverflowBtn) {
+      simulateOverflowBtn.addEventListener('click', () => {
+        this.showSimulateOverflowDialog(id);
+      });
+    }
     
-    $('#simulate-uaf-btn').addEventListener('click', () => {
-      if (allocation.status === 'freed') {
-        const bug = this.bugSimulator.simulateUseAfterFree(id);
-        this.updateBugsList();
-        this.updateStrategyBugSelector();
-        this.switchTab('bugs');
-        this.selectedBugId = bug.id;
-        this.updateBugDetails(bug.id);
-        this.highlightBugInList(bug.id);
-      }
-    });
+    const simulateUafBtn = $('#simulate-uaf-btn');
+    if (simulateUafBtn) {
+      simulateUafBtn.addEventListener('click', () => {
+        if (allocation.status === 'freed') {
+          const bug = this.bugSimulator.simulateUseAfterFree(id);
+          this.updateBugsList();
+          this.updateStrategyBugSelector();
+          this.switchTab('bugs');
+          this.selectedBugId = bug.id;
+          this.updateBugDetails(bug.id);
+          this.highlightBugInList(bug.id);
+        }
+      });
+    }
   }
   
   /**
@@ -850,10 +937,20 @@ class HeapToolkitUI {
     const exploitabilityElement = $('#exploitability');
     const mitigationsElement = $('#mitigations');
     
+    if (!detailsElement) {
+      console.warn('Bug details element not found');
+      return;
+    }
+    
+    if (!exploitabilityElement || !mitigationsElement) {
+      console.warn('Exploitability or mitigations element not found');
+      // Continue anyway, just show the bug details
+    }
+    
     if (!id || !this.bugSimulator.activeBugs.has(id)) {
       detailsElement.innerHTML = '<p>Select a bug to view details</p>';
-      exploitabilityElement.innerHTML = '';
-      mitigationsElement.innerHTML = '';
+      if (exploitabilityElement) exploitabilityElement.innerHTML = '';
+      if (mitigationsElement) mitigationsElement.innerHTML = '';
       return;
     }
     
@@ -939,53 +1036,66 @@ class HeapToolkitUI {
     `;
     
     // Generate exploitability assessment
-    const assessment = this.bugSimulator.assessExploitability(id);
-    
-    exploitabilityElement.innerHTML = `
-      <h4>Exploitability: <span class="severity-${assessment.overall}">${assessment.overall}</span></h4>
+    if (exploitabilityElement) {
+      const assessment = this.bugSimulator.assessExploitability(id);
       
-      <h5>Exploitation Factors:</h5>
-      <ul>
-        ${assessment.factors.map(factor => `<li>${factor}</li>`).join('')}
-      </ul>
-      
-      <h5>Exploitation Difficulties:</h5>
-      <ul>
-        ${assessment.difficulties.map(diff => `<li>${diff}</li>`).join('')}
-      </ul>
-      
-      <p>Overall exploitation score: ${assessment.score}/100</p>
-    `;
+      exploitabilityElement.innerHTML = `
+        <h4>Exploitability: <span class="severity-${assessment.overall}">${assessment.overall}</span></h4>
+        
+        <h5>Exploitation Factors:</h5>
+        <ul>
+          ${assessment.factors.map(factor => `<li>${factor}</li>`).join('')}
+        </ul>
+        
+        <h5>Exploitation Difficulties:</h5>
+        <ul>
+          ${assessment.difficulties.map(diff => `<li>${diff}</li>`).join('')}
+        </ul>
+        
+        <p>Overall exploitation score: ${assessment.score}/100</p>
+      `;
+    }
     
     // Generate mitigation suggestions
-    const mitigations = this.bugSimulator.generateMitigations(id);
-    
-    mitigationsElement.innerHTML = `
-      <h4>Suggested Mitigations:</h4>
-      <ul>
-        ${mitigations.map(m => `
-          <li>
-            <strong>${m.title}</strong>
-            <p>${m.description}</p>
-          </li>
-        `).join('')}
-      </ul>
-    `;
+    if (mitigationsElement) {
+      const mitigations = this.bugSimulator.generateMitigations(id);
+      
+      mitigationsElement.innerHTML = `
+        <h4>Suggested Mitigations:</h4>
+        <ul>
+          ${mitigations.map(m => `
+            <li>
+              <strong>${m.title}</strong>
+              <p>${m.description}</p>
+            </li>
+          `).join('')}
+        </ul>
+      `;
+    }
     
     // Add event listeners for the buttons
-    $('#generate-strategy-for-bug').addEventListener('click', () => {
-      this.switchTab('strategy');
-      $('#strategy-bug-selector').value = id;
-      this.generateStrategy(id);
-    });
+    const generateStrategyBtn = $('#generate-strategy-for-bug');
+    if (generateStrategyBtn) {
+      generateStrategyBtn.addEventListener('click', () => {
+        this.switchTab('strategy');
+        const strategyBugSelector = $('#strategy-bug-selector');
+        if (strategyBugSelector) {
+          strategyBugSelector.value = id;
+        }
+        this.generateStrategy(id);
+      });
+    }
     
-    $('#remove-bug').addEventListener('click', () => {
-      this.bugSimulator.removeBug(id);
-      this.selectedBugId = null;
-      this.updateBugsList();
-      this.updateStrategyBugSelector();
-      this.updateBugDetails(null);
-    });
+    const removeBugBtn = $('#remove-bug');
+    if (removeBugBtn) {
+      removeBugBtn.addEventListener('click', () => {
+        this.bugSimulator.removeBug(id);
+        this.selectedBugId = null;
+        this.updateBugsList();
+        this.updateStrategyBugSelector();
+        this.updateBugDetails(null);
+      });
+    }
   }
   
   /**
@@ -993,6 +1103,10 @@ class HeapToolkitUI {
    */
   updateStatistics() {
     const statsElement = $('#statistics');
+    if (!statsElement) {
+      console.warn('Statistics element not found');
+      return;
+    }
     
     const stats = this.analyzer.stats;
     const bucketStats = this.analyzer.generateBucketStats();
@@ -1075,6 +1189,11 @@ class HeapToolkitUI {
    */
   filterAllocationsByBucket(bucketSize) {
     const list = this.elements.allocationsList;
+    if (!list) {
+      console.warn('Allocations list element not found');
+      return;
+    }
+    
     list.innerHTML = '';
     
     const allocations = this.analyzer.getAllocationsInBucket(bucketSize);
@@ -1099,7 +1218,9 @@ class HeapToolkitUI {
       
       item.addEventListener('click', () => {
         this.selectedAllocationId = allocation.id;
-        this.visualizer.selectAllocation(allocation.id);
+        if (this.visualizer) {
+          this.visualizer.selectAllocation(allocation.id);
+        }
         this.updateAllocationDetails(allocation.id);
         this.highlightAllocationInList(allocation.id);
       });
@@ -1114,6 +1235,11 @@ class HeapToolkitUI {
    */
   filterAllocationsByType(type) {
     const list = this.elements.allocationsList;
+    if (!list) {
+      console.warn('Allocations list element not found');
+      return;
+    }
+    
     list.innerHTML = '';
     
     const allocations = Array.from(this.analyzer.allocations.values())
@@ -1139,7 +1265,9 @@ class HeapToolkitUI {
       
       item.addEventListener('click', () => {
         this.selectedAllocationId = allocation.id;
-        this.visualizer.selectAllocation(allocation.id);
+        if (this.visualizer) {
+          this.visualizer.selectAllocation(allocation.id);
+        }
         this.updateAllocationDetails(allocation.id);
         this.highlightAllocationInList(allocation.id);
       });
@@ -1153,6 +1281,10 @@ class HeapToolkitUI {
    * @param {number} id - Allocation ID
    */
   highlightAllocationInList(id) {
+    if (!this.elements.allocationsList) {
+      return;
+    }
+    
     const items = this.elements.allocationsList.querySelectorAll('.list-item');
     
     items.forEach(item => {
@@ -1165,6 +1297,10 @@ class HeapToolkitUI {
    * @param {number} id - Bug ID
    */
   highlightBugInList(id) {
+    if (!this.elements.bugsList) {
+      return;
+    }
+    
     const items = this.elements.bugsList.querySelectorAll('.list-item');
     
     items.forEach(item => {
@@ -1329,44 +1465,63 @@ class HeapToolkitUI {
     document.body.appendChild(modal);
     
     // Add event listeners
-    modal.querySelector('.cancel').addEventListener('click', () => {
-      document.body.removeChild(modal);
-    });
+    const cancelBtn = modal.querySelector('.cancel');
+    if (cancelBtn) {
+      cancelBtn.addEventListener('click', () => {
+        document.body.removeChild(modal);
+      });
+    }
     
-    modal.querySelector('.add').addEventListener('click', () => {
-      let bug;
-      
-      switch (bugType) {
-        case 'overflow':
-          const sourceId = parseInt(modal.querySelector('#source-alloc').value);
-          const overflowSize = parseInt(modal.querySelector('#overflow-size').value);
-          bug = this.bugSimulator.simulateOverflow(sourceId, overflowSize);
-          break;
+    const addBtn = modal.querySelector('.add');
+    if (addBtn) {
+      addBtn.addEventListener('click', () => {
+        let bug;
+        
+        switch (bugType) {
+          case 'overflow':
+            const sourceAllocSelect = modal.querySelector('#source-alloc');
+            const overflowSizeInput = modal.querySelector('#overflow-size');
+            if (sourceAllocSelect && overflowSizeInput) {
+              const sourceId = parseInt(sourceAllocSelect.value);
+              const overflowSize = parseInt(overflowSizeInput.value);
+              bug = this.bugSimulator.simulateOverflow(sourceId, overflowSize);
+            }
+            break;
+            
+          case 'uaf':
+            const freedAllocSelect = modal.querySelector('#freed-alloc');
+            if (freedAllocSelect) {
+              const freedId = parseInt(freedAllocSelect.value);
+              bug = this.bugSimulator.simulateUseAfterFree(freedId);
+            }
+            break;
+            
+          case 'typeconf':
+            const confSourceAllocSelect = modal.querySelector('#source-alloc');
+            const wrongTypeSelect = modal.querySelector('#wrong-type');
+            if (confSourceAllocSelect && wrongTypeSelect) {
+              const confSourceId = parseInt(confSourceAllocSelect.value);
+              const wrongType = wrongTypeSelect.value;
+              bug = this.bugSimulator.simulateTypeConfusion(confSourceId, wrongType);
+            }
+            break;
+        }
+        
+        document.body.removeChild(modal);
+        
+        if (bug) {
+          // Update UI
+          this.updateBugsList();
+          this.updateStrategyBugSelector();
           
-        case 'uaf':
-          const freedId = parseInt(modal.querySelector('#freed-alloc').value);
-          bug = this.bugSimulator.simulateUseAfterFree(freedId);
-          break;
-          
-        case 'typeconf':
-          const confSourceId = parseInt(modal.querySelector('#source-alloc').value);
-          const wrongType = modal.querySelector('#wrong-type').value;
-          bug = this.bugSimulator.simulateTypeConfusion(confSourceId, wrongType);
-          break;
-      }
-      
-      document.body.removeChild(modal);
-      
-      // Update UI
-      this.updateBugsList();
-      this.updateStrategyBugSelector();
-      
-      // Switch to bugs tab and select the new bug
-      this.switchTab('bugs');
-      this.selectedBugId = bug.id;
-      this.updateBugDetails(bug.id);
-      this.highlightBugInList(bug.id);
-    });
+          // Switch to bugs tab and select the new bug
+          this.switchTab('bugs');
+          this.selectedBugId = bug.id;
+          this.updateBugDetails(bug.id);
+          this.highlightBugInList(bug.id);
+        }
+      });
+    }
   }
   
   /**
@@ -1471,26 +1626,35 @@ class HeapToolkitUI {
     document.body.appendChild(modal);
     
     // Add event listeners
-    modal.querySelector('.cancel').addEventListener('click', () => {
-      document.body.removeChild(modal);
-    });
+    const cancelBtn = modal.querySelector('.cancel');
+    if (cancelBtn) {
+      cancelBtn.addEventListener('click', () => {
+        document.body.removeChild(modal);
+      });
+    }
     
-    modal.querySelector('.add').addEventListener('click', () => {
-      const overflowSize = parseInt(modal.querySelector('#overflow-size').value);
-      const bug = this.bugSimulator.simulateOverflow(sourceId, overflowSize);
-      
-      document.body.removeChild(modal);
-      
-      // Update UI
-      this.updateBugsList();
-      this.updateStrategyBugSelector();
-      
-      // Switch to bugs tab and select the new bug
-      this.switchTab('bugs');
-      this.selectedBugId = bug.id;
-      this.updateBugDetails(bug.id);
-      this.highlightBugInList(bug.id);
-    });
+    const addBtn = modal.querySelector('.add');
+    if (addBtn) {
+      addBtn.addEventListener('click', () => {
+        const overflowSizeInput = modal.querySelector('#overflow-size');
+        if (overflowSizeInput) {
+          const overflowSize = parseInt(overflowSizeInput.value);
+          const bug = this.bugSimulator.simulateOverflow(sourceId, overflowSize);
+          
+          document.body.removeChild(modal);
+          
+          // Update UI
+          this.updateBugsList();
+          this.updateStrategyBugSelector();
+          
+          // Switch to bugs tab and select the new bug
+          this.switchTab('bugs');
+          this.selectedBugId = bug.id;
+          this.updateBugDetails(bug.id);
+          this.highlightBugInList(bug.id);
+        }
+      });
+    }
   }
   
   /**
@@ -1499,6 +1663,10 @@ class HeapToolkitUI {
    */
   generateStrategy(bugId) {
     const outputElement = this.elements.strategyOutput;
+    if (!outputElement) {
+      console.warn('Strategy output element not found');
+      return;
+    }
     
     if (!bugId || !this.bugSimulator.activeBugs.has(bugId)) {
       outputElement.innerHTML = '<p>No bug selected</p>';
@@ -1560,11 +1728,17 @@ class HeapToolkitUI {
     `;
     
     // Add event listener for the button
-    $('#generate-code-from-strategy').addEventListener('click', () => {
-      this.switchTab('code');
-      $('#code-template-selector').value = 'exploit';
-      this.generateCode('exploit', bugId);
-    });
+    const generateCodeBtn = $('#generate-code-from-strategy');
+    if (generateCodeBtn) {
+      generateCodeBtn.addEventListener('click', () => {
+        this.switchTab('code');
+        const codeTemplateSelector = $('#code-template-selector');
+        if (codeTemplateSelector) {
+          codeTemplateSelector.value = 'exploit';
+        }
+        this.generateCode('exploit', bugId);
+      });
+    }
   }
   
   /**
@@ -1574,6 +1748,10 @@ class HeapToolkitUI {
    */
   generateCode(template, bugId = null) {
     const codeOutput = $('#code-output');
+    if (!codeOutput) {
+      console.warn('Code output element not found');
+      return;
+    }
     
     switch (template) {
       case 'spray':
