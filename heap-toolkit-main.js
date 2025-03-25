@@ -28,6 +28,9 @@ class HeapGroomingToolkit {
       strategyGenerator: this.strategyGenerator
     });
     
+    // Flag to track initialization state
+    this.initialized = false;
+    
     // Expose API for demos and testing
     window.heapToolkit = this;
   }
@@ -38,6 +41,16 @@ class HeapGroomingToolkit {
   initialize() {
     console.log('Initializing Heap Grooming Toolkit...');
     this.ui.initialize();
+    
+    // Set initialization flag
+    this.initialized = true;
+    
+    // Wait a short time to ensure DOM elements are fully initialized before first update
+    setTimeout(() => {
+      if (this.ui && typeof this.ui.updateUI === 'function') {
+        this.ui.updateUI();
+      }
+    }, 200);
   }
   
   /**
@@ -52,8 +65,15 @@ class HeapGroomingToolkit {
     // Create sample allocations of various types and sizes
     this.createSampleAllocations();
     
-    // Update UI
-    this.ui.updateUI();
+    // Update UI, but only if initialized
+    if (this.initialized && this.ui) {
+      // Add a small delay to ensure DOM is ready
+      setTimeout(() => {
+        if (this.ui && typeof this.ui.updateUI === 'function') {
+          this.ui.updateUI();
+        }
+      }, 50);
+    }
   }
   
   /**
@@ -126,8 +146,15 @@ class HeapGroomingToolkit {
     // Simulate an AJAX request
     this.simulateAjaxRequest();
     
-    // Update UI
-    this.ui.updateUI();
+    // Update UI, but only if initialized
+    if (this.initialized && this.ui) {
+      // Add a small delay to ensure DOM is ready
+      setTimeout(() => {
+        if (this.ui && typeof this.ui.updateUI === 'function') {
+          this.ui.updateUI();
+        }
+      }, 50);
+    }
   }
   
   /**
@@ -135,9 +162,25 @@ class HeapGroomingToolkit {
    */
   reset() {
     console.log('Resetting toolkit...');
-    this.analyzer.reset();
-    this.bugSimulator.reset();
-    this.ui.updateUI();
+    
+    // Reset components
+    if (this.analyzer) {
+      this.analyzer.reset();
+    }
+    
+    if (this.bugSimulator) {
+      this.bugSimulator.reset();
+    }
+    
+    // Update UI only if already initialized
+    if (this.initialized && this.ui) {
+      // Add a small delay to ensure DOM is ready
+      setTimeout(() => {
+        if (this.ui && typeof this.ui.updateUI === 'function') {
+          this.ui.updateUI();
+        }
+      }, 50);
+    }
   }
   
   /**
@@ -266,36 +309,57 @@ class HeapGroomingToolkit {
 
 // Initialize the toolkit when the page loads
 document.addEventListener('DOMContentLoaded', () => {
-  const toolkit = new HeapGroomingToolkit();
-  toolkit.initialize();
-  
-  // Add demo buttons to the page
-  const demoButtons = document.createElement('div');
-  demoButtons.className = 'demo-buttons';
-  demoButtons.innerHTML = `
-    <button id="run-demo">Run Simple Demo</button>
-    <button id="run-complex-demo">Run Complex Demo</button>
-    <button id="reset-toolkit">Reset</button>
-  `;
-  document.body.insertBefore(demoButtons, document.body.firstChild);
-  
-  // Add event listeners
-  document.getElementById('run-demo').addEventListener('click', () => {
-    toolkit.runDemo();
-  });
-  
-  document.getElementById('run-complex-demo').addEventListener('click', () => {
-    toolkit.runComplexDemo();
-  });
-  
-  document.getElementById('reset-toolkit').addEventListener('click', () => {
-    toolkit.reset();
-  });
-  
-  // Run a demo by default
+  // Wait for DOM to be fully loaded
   setTimeout(() => {
-    toolkit.runDemo();
-  }, 500);
+    try {
+      const toolkit = new HeapGroomingToolkit();
+      toolkit.initialize();
+      
+      // Add demo buttons to the page
+      const demoButtons = document.createElement('div');
+      demoButtons.className = 'demo-buttons';
+      demoButtons.innerHTML = `
+        <button id="run-demo">Run Simple Demo</button>
+        <button id="run-complex-demo">Run Complex Demo</button>
+        <button id="reset-toolkit">Reset</button>
+      `;
+      
+      if (document.body.firstChild) {
+        document.body.insertBefore(demoButtons, document.body.firstChild);
+      } else {
+        document.body.appendChild(demoButtons);
+      }
+      
+      // Add event listeners
+      const runDemoBtn = document.getElementById('run-demo');
+      if (runDemoBtn) {
+        runDemoBtn.addEventListener('click', () => {
+          toolkit.runDemo();
+        });
+      }
+      
+      const runComplexDemoBtn = document.getElementById('run-complex-demo');
+      if (runComplexDemoBtn) {
+        runComplexDemoBtn.addEventListener('click', () => {
+          toolkit.runComplexDemo();
+        });
+      }
+      
+      const resetToolkitBtn = document.getElementById('reset-toolkit');
+      if (resetToolkitBtn) {
+        resetToolkitBtn.addEventListener('click', () => {
+          toolkit.reset();
+        });
+      }
+      
+      // Run a demo by default with a longer delay to ensure everything is ready
+      setTimeout(() => {
+        toolkit.runDemo();
+      }, 800);
+    } catch (error) {
+      console.error('Error initializing toolkit:', error);
+    }
+  }, 300);
 });
 
 // Export the toolkit
