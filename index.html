@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Browser Heap Grooming Toolkit</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f5f5f5;
+      color: #333;
+    }
+    
+    header {
+      background-color: #2c3e50;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+    }
+    
+    header h1 {
+      margin: 0;
+      font-size: 1.8rem;
+    }
+    
+    header p {
+      margin: 0.5rem 0 0;
+      opacity: 0.8;
+      font-size: 0.9rem;
+    }
+    
+    .toolbar {
+      background-color: #34495e;
+      color: white;
+      padding: 0.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    
+    .toolbar-group {
+      display: flex;
+      align-items: center;
+      margin: 0.25rem;
+    }
+    
+    .toolbar button {
+      background-color: #3498db;
+      color: white;
+      border: none;
+      padding: 0.5rem 0.75rem;
+      margin: 0 0.25rem;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: background-color 0.2s;
+    }
+    
+    .toolbar button:hover {
+      background-color: #2980b9;
+    }
+    
+    .toolbar button.danger {
+      background-color: #e74c3c;
+    }
+    
+    .toolbar button.danger:hover {
+      background-color: #c0392b;
+    }
+    
+    .toolbar button.success {
+      background-color: #2ecc71;
+    }
+    
+    .toolbar button.success:hover {
+      background-color: #27ae60;
+    }
+    
+    .toolbar select {
+      padding: 0.5rem;
+      border-radius: 3px;
+      border: none;
+      margin: 0 0.25rem;
+    }
+    
+    main {
+      max-width: 1200px;
+      margin: 1rem auto;
+      padding: 0 1rem;
+    }
+    
+    .demo-notice {
+      background-color: #f39c12;
+      color: white;
+      padding: 0.75rem;
+      margin-bottom: 1rem;
+      border-radius: 3px;
+      text-align: center;
+    }
+    
+    .notice {
+      background-color: #2ecc71;
+      color: white;
+      padding: 0.75rem;
+      margin-bottom: 1rem;
+      border-radius: 3px;
+      font-weight: bold;
+      text-align: center;
+    }
+    
+    footer {
+      background-color: #2c3e50;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+      font-size: 0.8rem;
+      margin-top: 2rem;
+    }
+    
+    .helper-links {
+      margin-top: 0.5rem;
+    }
+    
+    .helper-links a {
+      color: #3498db;
+      margin: 0 0.5rem;
+      text-decoration: none;
+    }
+    
+    .helper-links a:hover {
+      text-decoration: underline;
+    }
+    
+    @media (max-width: 768px) {
+      .toolbar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      
+      .toolbar-group {
+        margin: 0.5rem 0;
+      }
+    }
+    
+    /* Additional styles for console panel */
+    .console-panel {
+      background-color: #2c3e50;
+      color: #ecf0f1;
+      padding: 1rem;
+      border-radius: 5px;
+      margin-top: 1rem;
+      font-family: monospace;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    
+    .console-panel p {
+      margin: 0.25rem 0;
+      line-height: 1.4;
+    }
+    
+    .console-panel .command {
+      color: #3498db;
+    }
+    
+    .console-panel .result {
+      color: #2ecc71;
+    }
+    
+    .console-panel .error {
+      color: #e74c3c;
+    }
+    
+    /* Documentation section styles */
+    .docs-section {
+      background-color: white;
+      padding: 1.5rem;
+      border-radius: 5px;
+      margin-top: 2rem;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    .docs-section h2 {
+      color: #2c3e50;
+      border-bottom: 2px solid #ecf0f1;
+      padding-bottom: 0.5rem;
+      margin-top: 0;
+    }
+    
+    .docs-section h3 {
+      color: #34495e;
+      margin: 1.5rem 0 0.75rem;
+    }
+    
+    .docs-section code {
+      background-color: #ecf0f1;
+      padding: 0.2rem 0.4rem;
+      border-radius: 3px;
+      font-family: monospace;
+    }
+    
+    .docs-section pre {
+      background-color: #ecf0f1;
+      padding: 0.75rem;
+      border-radius: 3px;
+      overflow-x: auto;
+      font-family: monospace;
+    }
+    
+    .docs-section ul {
+      padding-left: 1.5rem;
+    }
+    
+    .docs-section p {
+      line-height: 1.5;
+    }
+    
+    .docs-section .example {
+      border-left: 3px solid #3498db;
+      padding-left: 1rem;
+      margin: 1rem 0;
+    }
+    
+    .docs-section table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+    }
+    
+    .docs-section table th, 
+    .docs-section table td {
+      border: 1px solid #ecf0f1;
+      padding: 0.5rem;
+      text-align: left;
+    }
+    
+    .docs-section table th {
+      background-color: #f5f5f5;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Browser Heap Grooming Toolkit</h1>
+    <p>Advanced tools for heap manipulation, analysis, and visualization</p>
+  </header>
+  
+  <div class="toolbar">
+    <div class="toolbar-group">
+      <button id="run-simple-demo" class="success">Run Simple Demo</button>
+      <button id="run-complex-demo" class="success">Run Complex Demo</button>
+      <button id="reset-toolkit" class="danger">Reset Toolkit</button>
+    </div>
+    
+    <div class="toolbar-group">
+      <select id="spray-method">
+        <option value="basic">Basic Spray</option>
+        <option value="address">Address Spray</option>
+        <option value="diversity">Size Diversity Spray</option>
+        <option value="typed">Typed Array Spray</option>
+        <option value="payload">Payload Spray</option>
+        <option value="vtable">Vtable Spray</option>
+        <option value="bucket">Bucket Targeted Spray</option>
+        <option value="jit">JIT Spray</option>
+      </select>
+      <button id="run-spray">Run Spray</button>
+    </div>
+    
+    <div class="toolbar-group">
+      <button id="toggle-console">Toggle Console</button>
+      <button id="open-devtools">Open DevTools</button>
+    </div>
+  </div>
+  
+  <main>
+    <div id="demo-notice" class="demo-notice">
+      Select a demo to populate the heap with sample allocations, or use the DevTools console to create custom allocations.
+    </div>
+    
+    <div id="toolkit-container">
+      <!-- The toolkit UI will be rendered here by HeapToolkitUI -->
+    </div>
+    
+    <div id="console-panel" class="console-panel" style="display: none;">
+      <p>Console output will appear here. Use the <code>heapTools</code> object in the DevTools console to interact with the toolkit.</p>
+    </div>
+    
+    <div class="docs-section">
+      <h2>Quick Start Guide</h2>
+      
+      <p>This toolkit provides a set of tools for analyzing and manipulating the browser's heap memory, with a focus on understanding heap allocation patterns in Chrome's PartitionAlloc.</p>
+      
+      <h3>Using the Toolkit</h3>
+      
+      <ol>
+        <li>Start by running one of the demo scenarios to populate the heap with sample allocations</li>
+        <li>Use the visualizations to observe how allocations are organized in memory</li>
+        <li>Simulate bugs like buffer overflows or use-after-free to analyze their impact</li>
+        <li>Generate exploitation strategies based on the simulated bugs</li>
+        <li>Use the console API for more advanced operations</li>
+      </ol>
+      
+      <h3>Console API</h3>
+      
+      <p>Open your browser's DevTools console and use the <code>heapTools</code> object to interact with the toolkit programmatically:</p>
+      
+      <div class="example">
+        <pre>// Create an ArrayBuffer and track it
+const buffer = heapTools.createArrayBuffer(1024);
+
+// Create multiple typed arrays with a pattern
+const arrays = heapTools.sprayPattern('Uint32Array', 100, 256, 0x41414141);
+
+// Simulate a buffer overflow
+const bug = heapTools.simulateOverflow(5, 16);
+
+// Generate an exploitation strategy
+const strategy = heapTools.generateStrategy(bug.id);
+
+// Show heap analysis
+heapTools.analyze();</pre>
+      </div>
+      
+      <p>For a complete list of available functions, run <code>heapTools.help()</code> in the console.</p>
+      
+      <h3>Analyzing the Heap</h3>
+      
+      <p>The toolkit provides several visualizations to help understand the heap structure:</p>
+      
+      <ul>
+        <li><strong>Memory Buckets:</strong> Shows how memory is organized in size buckets</li>
+        <li><strong>Allocation Timeline:</strong> Visualizes allocations and deallocations over time</li>
+        <li><strong>Adjacency View:</strong> Shows relationships between adjacent allocations</li>
+        <li><strong>Heap Map:</strong> Provides a visual representation of memory usage by type</li>
+      </ul>
+      
+      <h3>Simulating Bugs</h3>
+      
+      <p>You can simulate common memory corruption bugs to understand their impact:</p>
+      
+      <ul>
+        <li><strong>Buffer Overflow:</strong> Simulates writing beyond the bounds of an allocation</li>
+        <li><strong>Use-After-Free:</strong> Simulates using memory that has been freed</li>
+        <li><strong>Type Confusion:</strong> Simulates interpreting memory as the wrong type</li>
+      </ul>
+      
+      <h3>Generating Exploitation Strategies</h3>
+      
+      <p>Based on the simulated bugs, the toolkit can generate exploitation strategies:</p>
+      
+      <ul>
+        <li>Heap spray techniques for reliable exploitation</li>
+        <li>Memory grooming sequences for placing objects in optimal positions</li>
+        <li>Code templates for implementing the strategies</li>
+      </ul>
+    </div>
+  </main>
+  
+  <footer>
+    <p>Browser Heap Grooming Toolkit - For educational and security research purposes only</p>
+    <div class="helper-links">
+      <a href="javascript:void(0)" onclick="document.getElementById('console-helper').style.display='block'">Show Console Helper</a> |
+      <a href="javascript:void(0)" onclick="heapTools.help()">Show API Help</a>
+    </div>
+    <div id="console-helper" style="display: none; margin-top: 1rem; text-align: left; background: #34495e; padding: 0.75rem; border-radius: 3px;">
+      <p>Press F12 or Ctrl+Shift+J to open the Developer Console</p>
+      <p>Try these commands:</p>
+      <code>heapTools.analyze()</code> - Show heap analysis<br>
+      <code>heapTools.createArrayBuffer(1024)</code> - Create a 1KB buffer<br>
+      <code>heapTools.sprayArrayBuffers(100, 64)</code> - Spray 100 buffers of 64 bytes<br>
+      <code>heapTools.help()</code> - Show all available commands
+    </div>
+  </footer>
+  
+  <!-- Load the toolkit scripts as ES modules -->
+  <script type="module">
+    import HeapGroomingToolkit from './heap-toolkit-main.js';
+    import consoleWrapper from './console-wrapper.js';
+    
+    // Initialize the toolkit
+    const toolkit = new HeapGroomingToolkit();
+    
+    // Set up event listeners
+    document.getElementById('run-simple-demo').addEventListener('click', () => {
+      toolkit.runDemo();
+      showNotice('Simple demo allocations created successfully!');
+    });
+    
+    document.getElementById('run-complex-demo').addEventListener('click', () => {
+      toolkit.runComplexDemo();
+      showNotice('Complex demo allocations created successfully!');
+    });
+    
+    document.getElementById('reset-toolkit').addEventListener('click', () => {
+      toolkit.reset();
+      showNotice('Toolkit reset. All allocations have been cleared.');
+    });
+    
+    document.getElementById('run-spray').addEventListener('click', () => {
+      const method = document.getElementById('spray-method').value;
+      runSelectedSpray(method);
+    });
+    
+    document.getElementById('toggle-console').addEventListener('click', () => {
+      const consolePanel = document.getElementById('console-panel');
+      consolePanel.style.display = consolePanel.style.display === 'none' ? 'block' : 'none';
+    });
+    
+    document.getElementById('open-devtools').addEventListener('click', () => {
+      alert('Press F12 or right-click and select "Inspect" to open DevTools');
+    });
+    
+    // Run selected spray method
+    function runSelectedSpray(method) {
+      try {
+        let result;
+        
+        switch (method) {
+          case 'basic':
+            result = consoleWrapper.console.spray('basicSpray', 0x41414141, 100, 1024);
+            break;
+          case 'address':
+            result = consoleWrapper.console.spray('addressSpray', 0x08080808, 50, 1024);
+            break;
+          case 'diversity':
+            result = consoleWrapper.console.spray('sizeDiversitySpray');
+            break;
+          case 'typed':
+            result = consoleWrapper.console.spray('typedArraySpray', 512, 50);
+            break;
+          case 'payload':
+            const payload = new Uint8Array([0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48]);
+            result = consoleWrapper.console.spray('payloadSpray', payload, 8, 50, 1024);
+            break;
+          case 'vtable':
+            result = consoleWrapper.console.spray('vtableSpray');
+            break;
+          case 'bucket':
+            result = consoleWrapper.console.spray('bucketTargetedSpray');
+            break;
+          case 'jit':
+            result = consoleWrapper.console.spray('jitSpray', 20);
+            break;
+          default:
+            console.error('Unknown spray method:', method);
+            return;
+        }
+        
+        showNotice(`${method} spray completed successfully!`);
+        console.log('Spray result:', result);
+        logToPanel(`Executed ${method} spray`, 'command');
+        logToPanel('Spray completed successfully', 'result');
+        
+        // Refresh the toolkit UI
+        toolkit.ui.updateUI();
+      } catch (error) {
+        console.error('Error running spray:', error);
+        logToPanel(`Error in ${method} spray: ${error.message}`, 'error');
+      }
+    }
+    
+    // Show a notification
+    function showNotice(message) {
+      const notice = document.createElement('div');
+      notice.className = 'notice';
+      notice.textContent = message;
+      
+      // Remove existing notices
+      document.querySelectorAll('.notice').forEach(el => el.remove());
+      
+      // Add to the DOM
+      const demoNotice = document.getElementById('demo-notice');
+      demoNotice.parentNode.insertBefore(notice, demoNotice.nextSibling);
+      
+      // Auto-remove after 3 seconds
+      setTimeout(() => {
+        notice.style.opacity = '0';
+        notice.style.transition = 'opacity 0.5s';
+        setTimeout(() => notice.remove(), 500);
+      }, 3000);
+    }
+    
+    // Log to console panel
+    function logToPanel(message, type = 'command') {
+      const panel = document.getElementById('console-panel');
+      const line = document.createElement('p');
+      line.className = type;
+      line.textContent = message;
+      panel.appendChild(line);
+      panel.scrollTop = panel.scrollHeight;
+    }
+    
+    // Override console.log to also log to our panel
+    const originalConsoleLog = console.log;
+    console.log = function(...args) {
+      originalConsoleLog.apply(console, args);
+      
+      const message = args.map(arg => {
+        if (typeof arg === 'object') {
+          try {
+            return JSON.stringify(arg);
+          } catch (e) {
+            return String(arg);
+          }
+        }
+        return String(arg);
+      }).join(' ');
+      
+      logToPanel(message, 'result');
+    };
+    
+    // Override console.error to also log to our panel
+    const originalConsoleError = console.error;
+    console.error = function(...args) {
+      originalConsoleError.apply(console, args);
+      
+      const message = args.map(arg => {
+        if (typeof arg === 'object') {
+          try {
+            return JSON.stringify(arg);
+          } catch (e) {
+            return String(arg);
+          }
+        }
+        return String(arg);
+      }).join(' ');
+      
+      logToPanel(message, 'error');
+    };
+    
+    // Run initial demo after a delay
+    setTimeout(() => {
+      toolkit.runDemo();
+      logToPanel('Initial demo allocations created', 'command');
+    }, 1000);
+  </script>
+</body>
+</html>
